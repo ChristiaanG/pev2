@@ -19,8 +19,8 @@ class User_Authentication extends CI_Controller
         include_once APPPATH."libraries/facebook-api-php-codexworld/facebook.php";
 
         // Facebook API Configuration
-        $appId = '1160842767314371';
-        $appSecret = '2f2c9d117efa3c2d98a86d41664b0b92';
+        $appId = '176024132837825';
+        $appSecret = '13389ec72882d91ecbd3092b21001ad7';
         $redirectUrl = base_url() . 'index.php/user_authentication/index/';
         $fbPermissions = 'email, user_likes';
 
@@ -33,30 +33,10 @@ class User_Authentication extends CI_Controller
         $fbuser = $facebook->getUser();
 
         if ($fbuser) {
-            $gameData['name'] = "";
-
             //$userGames = $facebook->api('/me/games');
-            $userProfile = $facebook->api('/me?fields=id,first_name,last_name,email,gender,locale,picture,games');
+            $userProfile = $facebook->api('/me?fields=id,first_name,last_name,email,gender,locale,picture.width(800).height(800),games.limit(250)');
             // Preparing data for database insertion
-
-            $numItems = count($userProfile['games']['data']);
-            $i = 0;
-
-            foreach($userProfile['games']['data'] as $a)
-            {
-                if(++$i !== $numItems)
-                {
-                    $gameData['name'] .= $a['name'] . ", ";;
-                }
-                else
-                {
-                    $gameData['name'] .= $a['name'];
-                }
-            }
-
-            $this->session->set_userdata('game', $gameData);
-
-            $userData['oauth_provider'] = 'facebook';
+            $userData['oauth_provider'] = 'Facebook';
             $userData['oauth_uid'] = $userProfile['id'];
             $userData['first_name'] = $userProfile['first_name'];
             $userData['last_name'] = $userProfile['last_name'];
@@ -65,13 +45,16 @@ class User_Authentication extends CI_Controller
             $userData['locale'] = $userProfile['locale'];
             $userData['profile_url'] = 'https://www.facebook.com/'.$userProfile['id'];
             $userData['picture_url'] = $userProfile['picture']['data']['url'];
-            //$userData['name'] = $userProfile['games']['data'][0]['name'];
-            //print_r($userProfile);
+
+            $output = NULL;
+            foreach ($userProfile['games']['data'] as $a) {
+                $output .= $a['name'].', ';
+          }
+            $userData['games'] = $output;
+
             $userID = $this->user->checkUser($userData);
-            $this->user->checkUser($userData);
             if(!empty($userID)){
                 $data['userData'] = $userData;
-                $data['gameData'] = $gameData;
                 $this->session->set_userdata('userData',$userData);
             } else {
                 $data['userData'] = array();
@@ -86,7 +69,8 @@ class User_Authentication extends CI_Controller
     public function logout() {
         $this->session->unset_userdata('userData');
         $this->session->sess_destroy();
-        redirect('user_authentication/index');
+        redirect('index.php/user_authentication');
     }
+
 }
 ?>
